@@ -1,7 +1,7 @@
 name: Release
 
-# Builds cross-platform binaries and attaches them to a GitHub Release
-# whenever a version tag (e.g. v0.1.0) is pushed.
+# On a version tag (e.g. v0.1.0): create a GitHub Release, then build
+# cross-platform binaries and attach them to it.
 on:
   push:
     tags:
@@ -11,8 +11,22 @@ permissions:
   contents: write
 
 jobs:
+  # Create the Release once, up front, so the parallel build jobs have
+  # something to upload their binaries to.
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create GitHub Release
+        run: |
+          gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+            || gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
+                 --title "$GITHUB_REF_NAME" --generate-notes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   build:
     name: ${{ matrix.target }}
+    needs: create-release
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
