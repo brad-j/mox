@@ -8,6 +8,13 @@ with no agent or API server setup — just SSH key access to the node.
 
 The name comes from Prox**mox** (and *moxie*).
 
+> ⚠️ **Heads up: this project is 100% vibe coded.** It was built almost
+> entirely by prompting an AI coding assistant, with light human steering. It
+> works for me, but it hasn't been battle-tested, professionally audited, or
+> hardened. It runs `qm`/`pvesh` commands against your Proxmox node over SSH —
+> including destructive ones like `destroy`. **Use at your own risk**, ideally
+> against a node you can afford to break first. No warranty; see [LICENSE](LICENSE).
+
 ## Status
 
 Early, but real and runnable:
@@ -16,12 +23,30 @@ Early, but real and runnable:
   auto-refresh, keyboard navigation.
 - `mox list` — a plain, scriptable table of VMs.
 
-## Build & run
+## Install
+
+Download a prebuilt binary from the
+[latest release](https://github.com/brad-j/mox/releases/latest) — Linux and
+macOS, x86_64 and arm64. No Rust toolchain required.
 
 ```bash
-cargo build
-./target/debug/mox          # live dashboard
-./target/debug/mox list     # plain table
+# example: macOS on Apple Silicon (adjust tag + target for your platform)
+curl -LO https://github.com/brad-j/mox/releases/latest/download/mox-v0.1.0-aarch64-apple-darwin.tar.gz
+tar xzf mox-v0.1.0-aarch64-apple-darwin.tar.gz
+sudo mv mox /usr/local/bin/
+mox --version
+```
+
+Available targets: `x86_64-unknown-linux-gnu`, `aarch64-unknown-linux-gnu`,
+`x86_64-apple-darwin`, `aarch64-apple-darwin`. Each archive ships with a
+`.sha256` checksum.
+
+## Build from source
+
+```bash
+cargo build --release
+./target/release/mox        # live dashboard
+./target/release/mox list   # plain table
 ```
 
 ### Dashboard keys

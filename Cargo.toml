@@ -8,8 +8,7 @@ license = "MIT"
 readme = "README.md"
 keywords = ["proxmox", "vm", "tui", "cli", "virtualization"]
 categories = ["command-line-utilities", "virtualization"]
-# TODO: set to your git repo before `cargo publish` (crates.io recommends it).
-# repository = "https://github.com/<you>/mox"
+repository = "https://github.com/brad-j/mox"
 
 [[bin]]
 name = "mox"

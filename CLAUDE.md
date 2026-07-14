@@ -241,12 +241,24 @@ read the corresponding function in `pve` before writing each one.
      prints a completion script (via `clap_complete`, +1 dep, builds on the
      existing clap so no transitive bloat). E.g. `mox completions zsh >
      ~/.zfunc/_mox`.
-   - ✅ crates.io packaging prep — `Cargo.toml` has `rust-version` (1.74),
-     `readme`, `keywords`, `categories`. `cargo package` builds a valid crate
-     (verified; `src/*.sh` are bundled for `include_str!`). Release binary is
-     stripped + LTO'd. REMAINING before `cargo publish`: set `repository` in
-     `Cargo.toml` to your git URL (left as a TODO — not fabricated), and a
-     crates.io account/token. A `brew` formula/tap is still open (out-of-repo).
+   - ✅ packaging + distribution — **decided: GitHub Releases with prebuilt
+     cross-platform binaries** (homelab audience, no Rust toolchain required),
+     not crates.io. `.github/workflows/release.yml` triggers on any `v*` tag
+     push and cross-compiles four targets — `x86_64`/`aarch64` for Linux
+     (`-gnu`) and macOS (`-apple-darwin`) — via
+     `taiki-e/upload-rust-binary-action`, attaching `.tar.gz` archives (with
+     `LICENSE`+`README.md` bundled) and `.sha256` checksums to the release.
+     Public repo ⇒ free Actions minutes + release hosting. `Cargo.toml` has
+     `rust-version` (1.74), `readme`, `keywords`, `categories`, and now
+     `repository = https://github.com/brad-j/mox`; release binary is stripped +
+     LTO'd. `LICENSE` (MIT) added at repo root. `cargo package` verified valid
+     (`src/*.sh` bundled for `include_str!`). README has install-from-release
+     instructions. **To release:** commit + push, then `git tag v0.1.0 && git
+     push origin v0.1.0` — the workflow builds and publishes. Caveat: arm64
+     Linux cross-compiles on the x86 runner (action installs the cross-linker;
+     `mox` has no C deps so it should be clean) — the one target not locally
+     verified. crates.io (`cargo install mox`) and a `brew` tap remain possible
+     future add-ons but are deliberately not the primary channel.
 
 ## Working in this repo
 
