@@ -1,0 +1,29 @@
+[package]
+name = "mox"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.74"
+description = "A terminal UI for managing Proxmox VMs — k9s for VMs"
+license = "MIT"
+readme = "README.md"
+keywords = ["proxmox", "vm", "tui", "cli", "virtualization"]
+categories = ["command-line-utilities", "virtualization"]
+# TODO: set to your git repo before `cargo publish` (crates.io recommends it).
+# repository = "https://github.com/<you>/mox"
+
+[[bin]]
+name = "mox"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+clap_complete = "4"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"
+ratatui = "0.29"
+crossterm = "0.28"
+
+[profile.release]
+strip = true
+lto = true
