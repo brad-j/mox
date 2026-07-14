@@ -32,8 +32,13 @@ pub fn run() -> Result<()> {
 
     println!("\n== Proxmox node connection ==");
     loop {
-        cfg.host = prompt("Proxmox node IP or hostname", &cfg.host)?;
-        if !cfg.host.trim().is_empty() {
+        let raw = prompt("Proxmox node IP or hostname", &cfg.host)?;
+        let host = sanitize_host(&raw);
+        if !host.is_empty() {
+            if host != raw.trim() {
+                println!("  → using host \"{host}\" (stripped scheme/port/path)");
+            }
+            cfg.host = host;
             break;
         }
         println!("Host is required.");
@@ -149,6 +154,46 @@ fn backup_path(path: &Path) -> PathBuf {
     PathBuf::from(s)
 }
 
+/// Normalize a pasted host into a bare IP/hostname. Users often paste the web
+/// UI URL (`https://192.168.3.160:8006/`) into the host prompt, which then gets
+/// used verbatim as an ssh target and can't resolve. Strip any URL scheme,
+/// `user@` credentials, path/query, and a trailing `:port` — the SSH port and
+/// identity live in their own config keys, so `PVE_HOST` must be just the host.
+fn sanitize_host(raw: &str) -> String {
+    let mut h = raw.trim();
+
+    // scheme
+    let lower = h.to_ascii_lowercase();
+    if lower.starts_with("http://") {
+        h = &h["http://".len()..];
+    } else if lower.starts_with("https://") {
+        h = &h["https://".len()..];
+    }
+
+    // user@host credentials
+    if let Some(idx) = h.rfind('@') {
+        h = &h[idx + 1..];
+    }
+
+    // path / query / fragment
+    if let Some(idx) = h.find(['/', '?', '#']) {
+        h = &h[..idx];
+    }
+
+    // trailing :port — but keep bracketed IPv6 literals intact
+    if h.starts_with('[') {
+        if let Some(end) = h.find(']') {
+            h = &h[..=end];
+        }
+    } else if let Some((host, port)) = h.rsplit_once(':') {
+        if !port.is_empty() && port.bytes().all(|b| b.is_ascii_digit()) {
+            h = host;
+        }
+    }
+
+    h.to_string()
+}
+
 /// Guess a `/24` subnet from an IPv4 host (first three octets); fall back to the
 /// documentation range for a hostname.
 fn derive_subnet(host: &str) -> String {
@@ -177,6 +222,28 @@ fn set_mode(_path: &Path, _mode: u32) {}
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn sanitize_host_strips_url_cruft() {
+        // the exact paste that broke doctor
+        assert_eq!(sanitize_host("http://192.168.3.160/"), "192.168.3.160");
+        // web UI URL with port + path
+        assert_eq!(
+            sanitize_host("https://192.168.3.160:8006/"),
+            "192.168.3.160"
+        );
+        // bare host:port (e.g. copied from the web UI address bar)
+        assert_eq!(sanitize_host("192.168.3.160:8006"), "192.168.3.160");
+        // user@host credentials
+        assert_eq!(sanitize_host("root@pve.local"), "pve.local");
+        // surrounding whitespace
+        assert_eq!(sanitize_host("  192.168.3.160  "), "192.168.3.160");
+        // bracketed IPv6 literal is preserved, its port stripped
+        assert_eq!(sanitize_host("[2001:db8::1]:8006"), "[2001:db8::1]");
+        // already-clean values pass through untouched
+        assert_eq!(sanitize_host("192.168.3.160"), "192.168.3.160");
+        assert_eq!(sanitize_host("pve.example.com"), "pve.example.com");
+    }
 
     #[test]
     fn derive_subnet_from_ip_or_default() {
