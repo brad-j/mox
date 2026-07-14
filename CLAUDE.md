@@ -169,6 +169,12 @@ read the corresponding function in `pve` before writing each one.
    refactored into `Config::parse_env` over `Config::defaults()`, with
    `Config::to_env_string` as the serializer (round-trip unit-tested). INTERACTIVE
    + writes to `$HOME`, so not run live from here; pure parts are unit-tested.
+   **Host hardening:** the host prompt runs input through `sanitize_host`
+   (strips URL scheme, `user@`, path/query, trailing `:port`; preserves
+   bracketed IPv6) — a real bug where pasting the web-UI URL
+   (`https://HOST:8006/`) produced `PVE_HOST=http://HOST/` and an unresolvable
+   ssh target that only surfaced later in `doctor`. Unit-tested against that
+   exact paste + web-UI/`user@`/IPv6/whitespace/passthrough cases.
 2. ~~**Detail pane (`status` + `ip`)**~~ — ✅ **done.** `Enter` opens an overlay
    with cores/mem/disk/uptime + LAN/Tailscale IPs via the guest agent. Possible
    follow-ups: cloud-init / tailscale health lines (`vm_tailscale_error` in the
@@ -254,10 +260,14 @@ read the corresponding function in `pve` before writing each one.
      LTO'd. `LICENSE` (MIT) added at repo root. `cargo package` verified valid
      (`src/*.sh` bundled for `include_str!`). README has install-from-release
      instructions. **To release:** commit + push, then `git tag v0.1.0 && git
-     push origin v0.1.0` — the workflow builds and publishes. Caveat: arm64
-     Linux cross-compiles on the x86 runner (action installs the cross-linker;
-     `mox` has no C deps so it should be clean) — the one target not locally
-     verified. crates.io (`cargo install mox`) and a `brew` tap remain possible
+     push origin v0.1.0` — the workflow builds and publishes. **v0.1.0 shipped**
+     (2026-07-14): all 8 assets (4 tarballs + 4 `.sha256`) are on the GitHub
+     release, including arm64-Linux — so that cross-compile works in CI (it had
+     been the one target not locally verifiable). NOTE: the first tag push
+     failed because the workflow uploaded to a release that didn't exist yet;
+     the fix was the up-front `create-release` job. The workflow triggers on
+     **tag push only** (`v*`), not on merge to `main` — cut a new `vX.Y.Z` tag
+     to release. crates.io (`cargo install mox`) and a `brew` tap remain possible
      future add-ons but are deliberately not the primary channel.
 
 ## Working in this repo
